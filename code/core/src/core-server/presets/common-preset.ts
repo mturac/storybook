@@ -276,7 +276,7 @@ export const experimental_serverChannel = async (
   options: OptionsWithRequiredCache
 ) => {
   initAIAnalyticsChannel(channel, options, () => storyIndexGeneratorPromise);
-  initializeChecklist(channel, () => storyIndexGeneratorPromise, options.configDir);
+  initializeChecklist(channel, () => storyIndexGeneratorPromise, options.configDir, options);
   initializeWhatsNew(channel, options);
   initializeSaveStory(channel, options);
   initFileSearchChannel(channel, options);

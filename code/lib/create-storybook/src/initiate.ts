@@ -2,7 +2,6 @@ import { resolve } from 'node:path';
 
 import { ProjectType } from 'storybook/internal/cli';
 import {
-  HandledError,
   type JsPackageManager,
   PackageManagerName,
   cache,
@@ -10,7 +9,7 @@ import {
 } from 'storybook/internal/common';
 import { getServerPort, withTelemetry } from 'storybook/internal/core-server';
 import { logTracker, logger } from 'storybook/internal/node-logger';
-import { telemetry, setTelemetryEnabled } from 'storybook/internal/telemetry';
+import { telemetry } from 'storybook/internal/telemetry';
 import { Feature } from 'storybook/internal/types';
 import type {
   SupportedBuilder,

@@ -198,7 +198,8 @@ const starter: StarterFunction = async function* starterGeneratorFn({
   }
 
   // Build additional global values
-  const globals: Record<string, any> = await buildFrameworkGlobalsFromOptions(options);
+  const globals = await buildFrameworkGlobalsFromOptions(options);
+  globalThis.STORYBOOK_GLOBALS = globals;
 
   yield;
 
@@ -296,7 +297,8 @@ const builder: BuilderFunction = async function* builderGeneratorFn({ startTime,
   const { cssFiles, jsFiles } = await readOrderedFiles(addonsDir, compilation?.outputFiles);
 
   // Build additional global values
-  const globals: Record<string, any> = await buildFrameworkGlobalsFromOptions(options);
+  const globals = await buildFrameworkGlobalsFromOptions(options);
+  globalThis.STORYBOOK_GLOBALS = globals;
 
   yield;
 

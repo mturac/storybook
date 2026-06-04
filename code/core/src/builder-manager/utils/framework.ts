@@ -4,10 +4,21 @@ import {
   frameworkToRenderer,
   getFrameworkName,
 } from 'storybook/internal/common';
+import type { SupportedFramework, SupportedRenderer } from 'storybook/internal/types';
 import { type Options, SupportedBuilder } from 'storybook/internal/types';
 
+export interface BuiltFrameworkGlobals {
+  CHANNEL_OPTIONS?: Partial<Options> & {
+    wsToken?: string;
+  };
+  STORYBOOK_BUILDER?: SupportedBuilder;
+  STORYBOOK_FRAMEWORK?: SupportedFramework;
+  STORYBOOK_RENDERER?: SupportedRenderer;
+  STORYBOOK_NETWORK_ADDRESS?: string;
+}
+
 export const buildFrameworkGlobalsFromOptions = async (options: Options) => {
-  const globals: Record<string, any> = {};
+  const globals: BuiltFrameworkGlobals = {};
 
   const { builder: builderConfig, channelOptions } = await options.presets.apply('core');
   const builderName = typeof builderConfig === 'string' ? builderConfig : builderConfig?.name;

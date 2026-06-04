@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 
-import { cache } from 'storybook/internal/common';
+import { cache, supportsAISetupFeature } from 'storybook/internal/common';
 
 /**
  * Flags persisted to the regular fs cache by the CLI to drive AI-related UI in
@@ -51,6 +51,16 @@ async function readProjectScopedFlag(
 
 /** Written by `storybook init` when the user accepted the AI feature and in legacy inits where the question was not asked. */
 export async function hasAiInitOptIn(configDir: string): Promise<boolean> {
+  const hasAiSetup = supportsAISetupFeature(
+    globalThis.STORYBOOK_GLOBALS.STORYBOOK_RENDERER,
+    globalThis.STORYBOOK_GLOBALS.STORYBOOK_BUILDER,
+    globalThis.STORYBOOK_GLOBALS.STORYBOOK_FRAMEWORK
+  );
+
+  if (!hasAiSetup) {
+    return false;
+  }
+
   const flag = await readProjectScopedFlag('ai-init-opt-in', configDir);
   return flag?.answer !== false;
 }

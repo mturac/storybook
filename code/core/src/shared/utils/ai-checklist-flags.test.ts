@@ -1,8 +1,9 @@
 import { resolve } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SupportedBuilder, SupportedFramework, SupportedRenderer } from 'storybook/internal/types';
 
-const { mockCacheStore, mockCache } = vi.hoisted(() => {
+const { mockCacheStore, mockCache, mockSupportsAISetupFeature } = vi.hoisted(() => {
   const store = new Map<string, unknown>();
   return {
     mockCacheStore: store,
@@ -12,20 +13,37 @@ const { mockCacheStore, mockCache } = vi.hoisted(() => {
         store.set(key, value);
       },
     },
+    mockSupportsAISetupFeature: vi.fn(),
   };
 });
 
 vi.mock('storybook/internal/common', () => ({
   cache: mockCache,
+  supportsAISetupFeature: mockSupportsAISetupFeature,
 }));
 
 describe('ai-checklist-flags', () => {
   beforeEach(() => {
+    globalThis.STORYBOOK_GLOBALS = {
+      STORYBOOK_RENDERER: SupportedRenderer.REACT,
+      STORYBOOK_BUILDER: SupportedBuilder.VITE,
+      STORYBOOK_FRAMEWORK: SupportedFramework.REACT_VITE,
+    };
     mockCacheStore.clear();
+    mockSupportsAISetupFeature.mockImplementation((renderer, builder, framework) => {
+      if (framework === SupportedFramework.REACT_NATIVE_WEB_VITE) {
+        return false;
+      }
+      return renderer === SupportedRenderer.REACT && builder === SupportedBuilder.VITE;
+    });
   });
 
   afterEach(() => {
+    mockCacheStore.clear();
+    mockSupportsAISetupFeature.mockReset();
+    vi.clearAllMocks();
     vi.resetModules();
+    delete (globalThis as Record<string, unknown>).STORYBOOK_GLOBALS;
   });
 
   describe('hasAiInitOptIn', () => {
@@ -71,6 +89,49 @@ describe('ai-checklist-flags', () => {
       });
       const { hasAiInitOptIn } = await import('./ai-checklist-flags.ts');
       expect(await hasAiInitOptIn('/repo/apps/web/.storybook')).toBe(false);
+    });
+
+    it('returns false when AI setup is unsupported for the current project context', async () => {
+      globalThis.STORYBOOK_GLOBALS = {
+        STORYBOOK_RENDERER: SupportedRenderer.VUE3,
+        STORYBOOK_BUILDER: SupportedBuilder.VITE,
+        STORYBOOK_FRAMEWORK: SupportedFramework.VUE3_VITE,
+      };
+      const { hasAiInitOptIn } = await import('./ai-checklist-flags.ts');
+      expect(await hasAiInitOptIn('/repo/apps/web/.storybook')).toBe(false);
+    });
+
+    it('returns false when AI setup is unsupported for react-native-web-vite even with react+vite', async () => {
+      globalThis.STORYBOOK_GLOBALS = {
+        STORYBOOK_RENDERER: SupportedRenderer.REACT,
+        STORYBOOK_BUILDER: SupportedBuilder.VITE,
+        STORYBOOK_FRAMEWORK: SupportedFramework.REACT_NATIVE_WEB_VITE,
+      };
+
+      const { hasAiInitOptIn } = await import('./ai-checklist-flags.ts');
+      expect(await hasAiInitOptIn('/repo/apps/mobile/.storybook')).toBe(false);
+    });
+
+    it('returns false when the renderer is not react', async () => {
+      globalThis.STORYBOOK_GLOBALS = {
+        STORYBOOK_RENDERER: SupportedRenderer.ANGULAR,
+        STORYBOOK_BUILDER: SupportedBuilder.VITE,
+        STORYBOOK_FRAMEWORK: SupportedFramework.ANGULAR,
+      };
+
+      const { hasAiInitOptIn } = await import('./ai-checklist-flags.ts');
+      expect(await hasAiInitOptIn('/repo/apps/angular/.storybook')).toBe(false);
+    });
+
+    it('returns false when the builder is not vite', async () => {
+      globalThis.STORYBOOK_GLOBALS = {
+        STORYBOOK_RENDERER: SupportedRenderer.REACT,
+        STORYBOOK_BUILDER: SupportedBuilder.WEBPACK5,
+        STORYBOOK_FRAMEWORK: SupportedFramework.REACT_WEBPACK5,
+      };
+
+      const { hasAiInitOptIn } = await import('./ai-checklist-flags.ts');
+      expect(await hasAiInitOptIn('/repo/apps/react-webpack/.storybook')).toBe(false);
     });
   });
 
