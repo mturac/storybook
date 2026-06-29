@@ -96,6 +96,39 @@ describe('PNPM Proxy', () => {
     });
   });
 
+  describe('getRegistryURL', () => {
+    it('should read the registry with npm config', async () => {
+      const executeCommandSpy = mockedExecuteCommand.mockResolvedValue({
+        stdout: 'https://registry.npmjs.org/\n',
+      } as any);
+
+      await expect(pnpmProxy.getRegistryURL()).resolves.toEqual('https://registry.npmjs.org/');
+      expect(executeCommandSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: 'npm',
+          args: ['config', 'get', 'registry', '-ws=false', '-iwr'],
+        })
+      );
+    });
+
+    it('should fall back to the default registry when npm is unavailable', async () => {
+      const error = Object.assign(new Error('spawn npm ENOENT'), { code: 'ENOENT' });
+      mockedExecuteCommand.mockRejectedValueOnce(error);
+
+      await expect(pnpmProxy.getRegistryURL()).resolves.toBeUndefined();
+      expect(vi.mocked(logger.debug)).toHaveBeenCalledWith(
+        expect.stringContaining('npm was not found')
+      );
+    });
+
+    it('should rethrow registry lookup errors other than missing npm', async () => {
+      const error = Object.assign(new Error('npm config failed'), { code: 'EACCES' });
+      mockedExecuteCommand.mockRejectedValueOnce(error);
+
+      await expect(pnpmProxy.getRegistryURL()).rejects.toBe(error);
+    });
+  });
+
   describe('addDependencies', () => {
     it('with devDep it should run `pnpm add -D storybook`', async () => {
       const executeCommandSpy = mockedExecuteCommand.mockResolvedValue({ stdout: '6.0.0' } as any);
